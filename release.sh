@@ -3,10 +3,10 @@
 set -e
 
 # Required env vars (exported by workflow):
-# ZIP_PATH, GIT_TOKEN, BUILD_TIME, TARGET_DEVICE, STOCK_DEVICE, OUTPUT_FILESYSTEM, COMPRESS_IMG_TO_XZ
+# ZIP_PATH, GIT_TOKEN, BUILD_TIME, STOCK_DEVICE, TARGET_DEVICE, OUTPUT_FILESYSTEM, COMPRESS_IMG_TO_XZ
 # GitHub automatically provides: GITHUB_REPOSITORY
 
-TAG_NAME="${TARGET_DEVICE}-$(date +%s)"
+TAG_NAME="${TARGET_DEVICE}-to-${STOCK_DEVICE}-$(date +%s)"
 RELEASE_NAME="${TARGET_DEVICE} Port For ${STOCK_DEVICE}"
 
 echo "Uploading to GoFile..."
@@ -27,8 +27,8 @@ $GOFILE_LINK
 • MD5: $MD5_SUM
 
 #### 📱 Rom Info:
-• Ported For: $STOCK_DEVICE
 • Ported From: $TARGET_DEVICE
+• Ported For: $STOCK_DEVICE
 
 #### ⚙️ Build Options:
 • Filesystem: $OUTPUT_FILESYSTEM
