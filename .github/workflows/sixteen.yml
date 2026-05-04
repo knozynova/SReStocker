@@ -73,7 +73,7 @@ jobs:
             "${{ github.event.inputs.STOCK_DEVICE }}" \
             "${{ github.event.inputs.OUTPUT_FILESYSTEM }}"
 
-      - name: Export variables for release step
+      - name: Export variables for release
         run: |
           echo "TARGET_DEVICE=${{ github.event.inputs.STOCK_DEVICE }}" >> $GITHUB_ENV
           echo "STOCK_DEVICE=${{ github.event.inputs.STOCK_DEVICE }}" >> $GITHUB_ENV
