@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -euo pipefail
+
 if [ "$#" -lt 2 ]; then
     echo "Usage: $0 <STOCK_DEVICE> <OUTPUT_FILESYSTEM>"
     exit 1
