@@ -2,8 +2,8 @@
 
 set -e
 
-# Required env vars:
-# ZIP_PATH, GIT_TOKEN, BUILD_TIME
+# Required env vars (exported by workflow):
+# ZIP_PATH, GIT_TOKEN, BUILD_TIME, TARGET_DEVICE, STOCK_DEVICE, OUTPUT_FILESYSTEM, COMPRESS_IMG_TO_XZ
 # GitHub automatically provides: GITHUB_REPOSITORY
 
 TAG_NAME="${TARGET_DEVICE}-$(date +%s)"
@@ -33,7 +33,6 @@ $GOFILE_LINK
 #### ⚙️ Build Options:
 • Filesystem: $OUTPUT_FILESYSTEM
 • Compressed IMG: $COMPRESS_IMG_TO_XZ
-• Used UI8 Tethering APEX: $USE_UI_8_TETHERING_APEX
 "
 
 # Convert to JSON-safe string
