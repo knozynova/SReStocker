@@ -89,7 +89,7 @@ jobs:
       - name: Package output
         run: |
           OUT_DIR="$(pwd)/OUT"
-          ZIP_NAME="${STOCK_DEVICE}_Port.zip"
+          ZIP_NAME="${TARGET_DEVICE}_Port.zip"
           ZIP_PATH="$OUT_DIR/$ZIP_NAME"
 
           ALLOWED="system.img system_ext.img product.img"
