@@ -2,7 +2,7 @@
 # ==============================================================================
 # SReStocker - Dynamic Mods Apply Script
 # Drop folders into QuantumROM/Mods/Apps/ — auto-installed.
-# Special handling: PhotoEditor_AIFull (deletes old + unzips)
+# Special handling: PhotoEditor_AIFull, JDM_Special
 # ==============================================================================
 
 : "${YELLOW:=\e[33m}"
@@ -19,6 +19,9 @@ APPLY_MODS() {
     local MODS_SRC="$(pwd)/QuantumROM/Mods/Apps"
     [ -d "$MODS_SRC" ] || { echo "- No Mods/Apps folder found, skipping."; return 0; }
 
+    # Folders to skip in dynamic scan (handled separately)
+    local SKIP_MODS=("JDM_Special" "PhotoEditor_AIFull")
+
     local APP_ROOTS=(
         "$EXTRACTED_FIRM_DIR/system/system/app"
         "$EXTRACTED_FIRM_DIR/system/system/priv-app"
@@ -32,25 +35,14 @@ APPLY_MODS() {
         [ -d "$mod" ] || continue
         local mod_name="$(basename "$mod")"
 
-        # --- PhotoEditor_AIFull special handling ---
-        if [ "$mod_name" = "PhotoEditor_AIFull" ]; then
-            echo "- Applying mod: PhotoEditor_AIFull (special)"
-            rm -rf "$EXTRACTED_FIRM_DIR/system/system/etc/ailasso"
-            rm -rf "$EXTRACTED_FIRM_DIR/system/system/etc/ailassomatting"
-            rm -rf "$EXTRACTED_FIRM_DIR/system/system/etc/inpainting"
-            rm -rf "$EXTRACTED_FIRM_DIR/system/system/etc/objectremoval"
-            rm -rf "$EXTRACTED_FIRM_DIR/system/system/etc/reflectionremoval"
-            rm -rf "$EXTRACTED_FIRM_DIR/system/system/etc/shadowremoval"
-            rm -rf "$EXTRACTED_FIRM_DIR/system/system/etc/style_transfer"
-            rm -rf "$EXTRACTED_FIRM_DIR/system/system/priv-app"/PhotoEditor_*
-            cp -rfa "$mod/." "$EXTRACTED_FIRM_DIR/"
-            unzip -o "$EXTRACTED_FIRM_DIR/system/system/priv-app/PhotoEditor_AIFull.zip" \
-                -d "$EXTRACTED_FIRM_DIR/system/system/priv-app/"
-            rm -f "$EXTRACTED_FIRM_DIR/system/system/priv-app/PhotoEditor_AIFull.zip"
-            continue
-        fi
+        # Skip special mods
+        local skip=0
+        for s in "${SKIP_MODS[@]}"; do
+            [ "$mod_name" = "$s" ] && skip=1 && break
+        done
+        [ "$skip" -eq 1 ] && continue
 
-        # --- Standard mod: skip if already exists ---
+        # Standard mod: skip if already exists
         local installed=0
         for root in "${APP_ROOTS[@]}"; do
             if [ -d "$root/$mod_name" ]; then
@@ -59,15 +51,30 @@ APPLY_MODS() {
                 break
             fi
         done
-        if [ "$installed" -eq 1 ]; then
-            continue
-        fi
+        [ "$installed" -eq 1 ] && continue
 
         echo "- Applying mod: $mod_name"
         cp -rfa "$mod/." "$EXTRACTED_FIRM_DIR/"
     done
 
-    # JDM Special (only if device type is jdm)
+    # --- PhotoEditor_AIFull special handling ---
+    if [ -d "$MODS_SRC/PhotoEditor_AIFull" ]; then
+        echo "- Applying mod: PhotoEditor_AIFull (special)"
+        rm -rf "$EXTRACTED_FIRM_DIR/system/system/etc/ailasso"
+        rm -rf "$EXTRACTED_FIRM_DIR/system/system/etc/ailassomatting"
+        rm -rf "$EXTRACTED_FIRM_DIR/system/system/etc/inpainting"
+        rm -rf "$EXTRACTED_FIRM_DIR/system/system/etc/objectremoval"
+        rm -rf "$EXTRACTED_FIRM_DIR/system/system/etc/reflectionremoval"
+        rm -rf "$EXTRACTED_FIRM_DIR/system/system/etc/shadowremoval"
+        rm -rf "$EXTRACTED_FIRM_DIR/system/system/etc/style_transfer"
+        rm -rf "$EXTRACTED_FIRM_DIR/system/system/priv-app"/PhotoEditor_*
+        cp -rfa "$MODS_SRC/PhotoEditor_AIFull/." "$EXTRACTED_FIRM_DIR/"
+        unzip -o "$EXTRACTED_FIRM_DIR/system/system/priv-app/PhotoEditor_AIFull.zip" \
+            -d "$EXTRACTED_FIRM_DIR/system/system/priv-app/"
+        rm -f "$EXTRACTED_FIRM_DIR/system/system/priv-app/PhotoEditor_AIFull.zip"
+    fi
+
+    # --- JDM Special (only if device type is jdm) ---
     if [ "${STOCK_DEVICE_TYPE:-}" = "jdm" ]; then
         echo "- Applying mod: JDM_Special SamSungCamera"
         rm -rf "$EXTRACTED_FIRM_DIR/system/system/priv-app/SamSungCamera"
