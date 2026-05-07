@@ -6,6 +6,10 @@ on:
       SAMFW_URL:
         description: "Direct SamFW download URL (.zip)"
         required: true
+      APP_NAMES:
+        description: "App folder names to extract (space separated)"
+        required: true
+        default: "SamsungSmartSuggestions"
 
 jobs:
   build:
@@ -17,6 +21,19 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      - name: Download base Apps.zip
+        run: |
+          echo "Downloading base Apps.zip..."
+          curl -L -o apps.zip "https://github.com/Xiatsuma/SReStocker-Mods/releases/download/v1.0/Apps.zip"
+          if [ ! -f apps.zip ]; then
+            echo "ERROR: Failed to download apps.zip"
+            exit 1
+          fi
+          mkdir -p QuantumROM/Mods
+          unzip -q apps.zip -d QuantumROM/Mods
+          rm apps.zip
+          echo "✅ Base Apps.zip loaded."
 
       - name: Install dependencies
         run: |
@@ -34,44 +51,41 @@ jobs:
           EXTRACT_FIRMWARE "FIRMWARE/MODS_TEMP"
           EXTRACT_FIRMWARE_IMG "FIRMWARE/MODS_TEMP"
 
-      - name: Collect SamsungSmartSuggestions
+      - name: Collect apps from firmware
         run: |
-          mkdir -p MODS_OUT/Apps/SamsungSmartSuggestions
-          
-          APP_PATH=$(find FIRMWARE/MODS_TEMP -type d -name "SamsungSmartSuggestions" | head -1)
-          if [ -z "$APP_PATH" ]; then
-            echo "ERROR: SamsungSmartSuggestions not found"
-            exit 1
-          fi
-          echo "Found: $APP_PATH"
-          
-          REL_PATH="${APP_PATH#FIRMWARE/MODS_TEMP/}"
-          mkdir -p "MODS_OUT/Apps/SamsungSmartSuggestions/$(dirname "$REL_PATH")"
-          cp -ra "$APP_PATH" "MODS_OUT/Apps/SamsungSmartSuggestions/$REL_PATH"
-          
-          for perm_dir in $(find FIRMWARE/MODS_TEMP -type d -name "permissions" -path "*/etc/*"); do
-            for xml in "$perm_dir"/*SamsungSmartSuggestions* "$perm_dir"/*SmartSuggest* 2>/dev/null; do
-              if [ -f "$xml" ]; then
-                PERM_REL="${xml#FIRMWARE/MODS_TEMP/}"
-                mkdir -p "MODS_OUT/Apps/SamsungSmartSuggestions/$(dirname "$PERM_REL")"
-                cp -a "$xml" "MODS_OUT/Apps/SamsungSmartSuggestions/$PERM_REL"
-                echo "Copied: $(basename "$xml")"
-              fi
+          for APP in ${{ github.event.inputs.APP_NAMES }}; do
+            echo "Searching for: $APP"
+            APP_PATH=$(find FIRMWARE/MODS_TEMP -type d -name "$APP" | head -1)
+            if [ -z "$APP_PATH" ]; then
+              echo "WARNING: $APP not found, skipping"
+              continue
+            fi
+            echo "Found $APP at: $APP_PATH"
+            
+            REL_PATH="${APP_PATH#FIRMWARE/MODS_TEMP/}"
+            mkdir -p "QuantumROM/Mods/Apps/$APP/$(dirname "$REL_PATH")"
+            cp -ra "$APP_PATH" "QuantumROM/Mods/Apps/$APP/$REL_PATH"
+            
+            # Find and copy permission files for this app
+            find FIRMWARE/MODS_TEMP -type f \( -iname "*${APP}*.xml" -o -iname "*${APP//Samsung/}*.xml" \) -path "*/etc/permissions/*" 2>/dev/null | while read xml; do
+              PERM_REL="${xml#FIRMWARE/MODS_TEMP/}"
+              mkdir -p "QuantumROM/Mods/Apps/$APP/$(dirname "$PERM_REL")"
+              cp -a "$xml" "QuantumROM/Mods/Apps/$APP/$PERM_REL"
+              echo "  + permission: $(basename "$xml")"
             done
+            
+            echo "  ✓ $APP collected"
           done
           
-          echo "Collected:"
-          find MODS_OUT -type f
+          echo ""
+          echo "=== Mods folder contents ==="
+          find QuantumROM/Mods/Apps -type f | head -50
 
-      - name: Download base Apps.zip and merge
+      - name: Package Apps.zip
         run: |
-          curl -L -o base_Apps.zip "https://github.com/Xiatsuma/SReStocker-Mods/releases/download/v1.0/Apps.zip"
-          mkdir -p base_apps
-          unzip -q base_Apps.zip -d base_apps
-          cp -ra MODS_OUT/Apps/* base_apps/Apps/
-          cd base_apps
-          7z a -tzip ../Apps.zip .
-          cd ..
+          cd QuantumROM/Mods
+          7z a -tzip ../../Apps.zip .
+          cd ../..
           echo "Done. Size: $(du -h Apps.zip | cut -f1)"
 
       - name: Upload to Release
